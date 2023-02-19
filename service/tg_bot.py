@@ -1,5 +1,6 @@
 import os
 import textwrap
+import requests
 
 import telegram.ext
 import phonenumbers
@@ -16,6 +17,7 @@ from telegram.ext import (
     MessageHandler,
     )
 
+from django.core.files.base import ContentFile
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, LabeledPrice
 from users.models import User, Freelancer, Customer, BotState
 from service.models import Order
@@ -56,7 +58,14 @@ class TgDialogBot:
         self.updater.dispatcher.add_handler(CommandHandler('start', get_user(self.handle_users_reply)))
         self.updater.dispatcher.add_handler(CallbackQueryHandler(get_user(self.handle_users_reply)))
         self.updater.dispatcher.add_handler(
-            MessageHandler(Filters.text | Filters.contact, get_user(self.handle_users_reply))
+            MessageHandler(
+                Filters.text |
+                Filters.contact |
+                Filters.document |
+                Filters.photo |
+                Filters.attachment,
+                get_user(self.handle_users_reply)
+            )
         )
 
     def handle_users_reply(self, update, context):
@@ -71,6 +80,12 @@ class TgDialogBot:
             user_reply = update.poll_answer.option_ids
             chat_id = update.poll_answer.user.id
         elif update.pre_checkout_query:
+            user_reply = ''
+            chat_id = update.effective_user.id
+        elif update.message.document:
+            user_reply = ''
+            chat_id = update.effective_user.id
+        elif update.message.effective_attachment:
             user_reply = ''
             chat_id = update.effective_user.id
         else:
@@ -304,11 +319,29 @@ def create_order(update: Update, context: CallbackContext):
     elif step == 3:
         user_data['order_description'] = update.message.text
     elif step == 4:
+        if update.callback_query and update.callback_query.data == 'next':
+            pass
+        elif not update.message.effective_attachment:
+            user_data['step_order'] = 3
+            step = user_data['step_order']
+        elif update.message.effective_attachment:
+            attachment = update.message.effective_attachment
+            if isinstance(attachment, list):
+                file_id = attachment[-1]['file_id']
+            else:
+                file_id = attachment['file_id']
+            file_path = context.bot.get_file(file_id)['file_path']
+            _, file_extension = os.path.splitext(file_path)
+            response = requests.get(file_path)
+            response.raise_for_status()
+            content_file = ContentFile(response.content, f'{file_id}{file_extension}')
+            user_data['content_file'] = content_file
+    elif step == 5:
         if update.callback_query and update.callback_query.data == 'confirm':
             save_order(update, context)
             show_customer_step(context, chat_id)
             return 'HANDLE_CUSTOMER'
-    elif step == 5:
+    elif step == 6:
         if update.callback_query and update.callback_query.data == 'confirm':
             save_order(update, context)
             show_customer_step(context, chat_id)

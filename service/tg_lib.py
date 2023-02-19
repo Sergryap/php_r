@@ -119,8 +119,9 @@ def show_creating_order_step(context, chat_id, step):
     message = {
         1: 'Введите краткое название заказа',
         2: 'Введите подробное описание заказа',
-        3: 'Подтвердите или проверьте свой заказ',
-        4: textwrap.dedent(
+        3: 'Прикрепите файл либо пропустите данный пункт',
+        4: 'Подтвердите или проверьте свой заказ',
+        5: textwrap.dedent(
                f'''
                Название: {user_data.get('order_title')}
                Описание: {user_data.get('order_description')}
@@ -132,6 +133,12 @@ def show_creating_order_step(context, chat_id, step):
         2: None,
         3: InlineKeyboardMarkup(
             inline_keyboard=[
+                [InlineKeyboardButton('Пропустить', callback_data='next')]
+            ],
+            resize_keyboard=True
+        ),
+        4: InlineKeyboardMarkup(
+            inline_keyboard=[
                 [
                     InlineKeyboardButton('Проверить заказ', callback_data='check'),
                     InlineKeyboardButton('Подтвердить', callback_data='confirm')
@@ -139,7 +146,7 @@ def show_creating_order_step(context, chat_id, step):
             ],
             resize_keyboard=True
         ),
-        4: InlineKeyboardMarkup(
+        5: InlineKeyboardMarkup(
             inline_keyboard=[
                 [InlineKeyboardButton('Изменить заказ', callback_data='break')],
                 [InlineKeyboardButton('Подтвердить', callback_data='confirm')]
@@ -302,5 +309,8 @@ def save_order(update, context):
     Order.objects.create(
         client=customer,
         title=user_data['order_title'],
-        description=user_data['order_description']
+        description=user_data['order_description'],
+        document=user_data.get('content_file')
     )
+    if user_data.get('content_file'):
+        del user_data['content_file']

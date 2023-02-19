@@ -57,6 +57,11 @@ class Order(models.Model):
         null=True,
         blank=True
     )
+    document = models.FileField(
+        upload_to='order_documents/%Y/%m/%d/',
+        blank=True,
+        null=True
+    )
 
     class Meta:
         verbose_name = 'заказ'
