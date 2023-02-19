@@ -1,4 +1,6 @@
 import os
+import textwrap
+
 import telegram.ext
 import phonenumbers
 
@@ -30,7 +32,8 @@ from service.tg_lib import (
     show_freelancer_menu,
     show_order_detail,
     invite_to_recipient_chat,
-    send_message_recipient
+    send_message_recipient,
+    save_order
 )
 
 
@@ -301,19 +304,18 @@ def create_order(update: Update, context: CallbackContext):
     elif step == 3:
         user_data['order_description'] = update.message.text
     elif step == 4:
-        del user_data['step_order']
-        customer, _ = Customer.objects.get_or_create(
-            username=f'{update.effective_user.username}_{chat_id}',
-        )
-        if update.callback_query and update.callback_query.data != 'break':
-            order = Order.objects.create(
-                client=customer,
-                title=user_data['order_title'],
-                description=user_data['order_description']
-            )
-            show_order_detail(context, chat_id, order.pk, button=False)
-        show_customer_step(context, chat_id)
-        return 'HANDLE_CUSTOMER'
+        if update.callback_query and update.callback_query.data == 'confirm':
+            save_order(update, context)
+            show_customer_step(context, chat_id)
+            return 'HANDLE_CUSTOMER'
+    elif step == 5:
+        if update.callback_query and update.callback_query.data == 'confirm':
+            save_order(update, context)
+            show_customer_step(context, chat_id)
+            return 'HANDLE_CUSTOMER'
+        elif update.callback_query and update.callback_query.data == 'break':
+            user_data['step_order'] = 1
+            step = user_data['step_order']
     show_creating_order_step(context, chat_id, step)
 
     return 'CREATE_ORDER'

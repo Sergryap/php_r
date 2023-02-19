@@ -115,21 +115,35 @@ def show_customer_start(context, chat_id):
 
 
 def show_creating_order_step(context, chat_id, step):
+    user_data = context.user_data
     message = {
         1: 'Введите краткое название заказа',
         2: 'Введите подробное описание заказа',
-        3: 'Нажмите чтобы посмотреть весь заказа'
-    }
-    callback_data = {
-        1: 'title',
-        2: 'description',
-        3: 'verify'
+        3: 'Подтвердите или проверьте свой заказ',
+        4: textwrap.dedent(
+               f'''
+               Название: {user_data.get('order_title')}
+               Описание: {user_data.get('order_description')}
+               '''
+           )
     }
     reply_markup = {
         1: None,
         2: None,
         3: InlineKeyboardMarkup(
-            inline_keyboard=[[InlineKeyboardButton('Весь заказ', callback_data=callback_data[step])]],
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton('Проверить заказ', callback_data='check'),
+                    InlineKeyboardButton('Подтвердить', callback_data='confirm')
+                ]
+            ],
+            resize_keyboard=True
+        ),
+        4: InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton('Изменить заказ', callback_data='break')],
+                [InlineKeyboardButton('Подтвердить', callback_data='confirm')]
+            ],
             resize_keyboard=True
         ),
     }
@@ -276,3 +290,17 @@ def send_message_recipient(update, context, recipient):
     context.bot.send_message(chat_id=chat_id, text=text)
     del user_data['recipient_telegram_id']
     del user_data['message_for_order']
+
+
+def save_order(update, context):
+    user_data = context.user_data
+    chat_id = update.effective_chat.id
+    del user_data['step_order']
+    customer, _ = Customer.objects.get_or_create(
+        username=f'{update.effective_user.username}_{chat_id}',
+    )
+    Order.objects.create(
+        client=customer,
+        title=user_data['order_title'],
+        description=user_data['order_description']
+    )
