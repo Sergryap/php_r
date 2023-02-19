@@ -1,17 +1,8 @@
-import re
-import json
 import textwrap
 
-import telegram.ext
-
-from telegram import (
-    ReplyKeyboardMarkup,
-    KeyboardButton
-)
-
+from telegram import ReplyKeyboardMarkup, KeyboardButton
 from django.utils.timezone import now
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
-from django.conf import settings
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from users.models import Customer, Freelancer
 from service.models import Order
 from django.db.models import Q
@@ -202,7 +193,7 @@ def show_customer_orders(update, context):
                 [
                     InlineKeyboardButton(
                         'Написать фрилансеру',
-                        callback_data=f"answer:{order.freelancer.telegram_id}:{order.pk}"
+                        callback_data=f"send:{order.freelancer.telegram_id}:{order.pk}"
                     )
                 ]
             ]
@@ -244,13 +235,6 @@ def show_freelancers(context, chat_id):
     context.bot.send_message(chat_id=chat_id, text=text, reply_markup=reply_markup)
 
 
-def send_freelancer_message(context, message, freelancer_telegram_id, chat_id):
-    reply_markup = InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton('Ответить заказчику', callback_data=chat_id)]],
-        resize_keyboard=True
-    )
-
-
 def invite_to_recipient_chat(update, context, recipient):
     recipient_telegram_id = update.callback_query.data.split(':')[1]
     chat_id = update.effective_chat.id
@@ -283,7 +267,7 @@ def send_message_recipient(update, context, recipient):
     sender = {'customer': 'фрилансеру', 'freelancer': 'заказчику'}
     reply_markup = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(f'Ответить {sender[recipient]}', callback_data=f'answer:{chat_id}:{order_pk}')]
+            [InlineKeyboardButton(f'Ответить {sender[recipient]}', callback_data=f'send:{chat_id}:{order_pk}')]
         ],
         resize_keyboard=True
     )

@@ -1,6 +1,4 @@
 import os
-import time
-import textwrap
 import telegram.ext
 import phonenumbers
 
@@ -34,7 +32,6 @@ from service.tg_lib import (
     invite_to_recipient_chat,
     send_message_recipient
 )
-from pprint import pprint
 
 
 def get_user(func):
@@ -173,7 +170,7 @@ def handle_freelancer(update, context):
         order.save()
         context.bot.send_message(chat_id, text=f'Вы назначены исполнителем по заказу "{order.title}"')
         show_freelancer_menu(context, chat_id)
-    elif update.callback_query and update.callback_query.data.split(':')[0] == 'answer':
+    elif update.callback_query and update.callback_query.data.split(':')[0] == 'send':
         invite_to_recipient_chat(update, context, recipient='customer')
     elif user_data.get('recipient_telegram_id'):
         send_message_recipient(update, context, recipient='customer')
@@ -236,7 +233,7 @@ def handle_customer(update, context):
         step = user_data['step_order']
         show_creating_order_step(context, chat_id, step)
         return 'CREATE_ORDER'
-    elif update.callback_query and update.callback_query.data.split(':')[0] == 'answer':
+    elif update.callback_query and update.callback_query.data.split(':')[0] == 'send':
         invite_to_recipient_chat(update, context, recipient='freelancer')
         return 'HANDLE_CUSTOMER'
     elif user_data.get('recipient_telegram_id'):
