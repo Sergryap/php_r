@@ -278,7 +278,7 @@ def send_message_recipient(update, context, recipient):
         '''
     )
     sender = {'customer': 'Фрилансер', 'freelancer': 'Заказчик'}
-    order.messages += f'\n{sender[recipient]}: "{message}"'
+    order.messages += f'\n{sender[recipient]}: {now().strftime("%d.%m.%Y - %H:%M:%S")}:\n"{message}"'
     order.save()
     sender = {'customer': 'фрилансеру', 'freelancer': 'заказчику'}
     reply_markup = InlineKeyboardMarkup(
