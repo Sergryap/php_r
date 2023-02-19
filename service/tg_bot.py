@@ -30,7 +30,9 @@ from service.tg_lib import (
     show_customer_orders,
     show_freelancers,
     show_freelancer_menu,
-    show_order_detail
+    show_order_detail,
+    invite_to_recipient_chat,
+    send_message_recipient
 )
 from pprint import pprint
 
@@ -172,37 +174,10 @@ def handle_freelancer(update, context):
         context.bot.send_message(chat_id, text=f'Вы назначены исполнителем по заказу "{order.title}"')
         show_freelancer_menu(context, chat_id)
     elif update.callback_query and update.callback_query.data.split(':')[0] == 'answer':
-        user_data['customer_telegram_id'] = update.callback_query.data.split(':')[1]
-        order_pk = update.callback_query.data.split(':')[2]
-        user_data['message_for_order'] = order_pk
-        text = 'Введите сообщение для отправки заказчику'
-        context.bot.send_message(chat_id, text=text)
-    elif user_data.get('customer_telegram_id'):
-        user_data = context.user_data
-        message = update.message.text
-        order_pk = user_data['message_for_order']
-        order = Order.objects.get(pk=order_pk)
-        text = textwrap.dedent(
-            f'''
-            Сообщение от фрилансера по заказу №{order_pk}
-            Название: {order.title}
-            Сообщение: "{message}"
-            '''
-        )
-        order.messages += f'\nФрилансер: "{message}"'
-        order.save()
-        reply_markup = InlineKeyboardMarkup(
-            inline_keyboard=[
-                [InlineKeyboardButton('Ответить фрилансеру', callback_data=f'answer:{chat_id}:{order_pk}')]
-            ],
-            resize_keyboard=True
-        )
-        context.bot.send_message(chat_id=user_data['customer_telegram_id'], text=text, reply_markup=reply_markup)
-        text = 'Ваше сообщение отправлено'
-        context.bot.send_message(chat_id=chat_id, text=text)
+        invite_to_recipient_chat(update, context, recipient='customer')
+    elif user_data.get('recipient_telegram_id'):
+        send_message_recipient(update, context, recipient='customer')
         show_freelancer_menu(context, chat_id)
-        del user_data['customer_telegram_id']
-        del user_data['message_for_order']
 
     return 'HANDLE_FREELANCER'
 
@@ -261,40 +236,12 @@ def handle_customer(update, context):
         step = user_data['step_order']
         show_creating_order_step(context, chat_id, step)
         return 'CREATE_ORDER'
-    elif update.callback_query and update.callback_query.data.split(':')[0] in ['tg_id', 'answer']:
-        freelancer_telegram_id = update.callback_query.data.split(':')[1]
-        order_pk = update.callback_query.data.split(':')[2]
-        user_data['freelancer_telegram_id'] = freelancer_telegram_id
-        user_data['message_for_order'] = order_pk
-        text = 'Введите сообщение для отправки фрилансеру'
-        context.bot.send_message(chat_id=chat_id, text=text)
+    elif update.callback_query and update.callback_query.data.split(':')[0] == 'answer':
+        invite_to_recipient_chat(update, context, recipient='freelancer')
         return 'HANDLE_CUSTOMER'
-    elif user_data.get('freelancer_telegram_id'):
-        user_data = context.user_data
-        message = update.message.text
-        order_pk = user_data['message_for_order']
-        order = Order.objects.get(pk=order_pk)
-        text = textwrap.dedent(
-            f'''
-            Сообщение от заказчика по заказу №{order_pk}
-            Название: {order.title}
-            Сообщение: "{message}"
-            '''
-        )
-        order.messages += f'\nЗаказчик: "{message}"'
-        order.save()
-        reply_markup = InlineKeyboardMarkup(
-            inline_keyboard=[
-                [InlineKeyboardButton('Ответить заказчику', callback_data=f'answer:{chat_id}:{order_pk}')]
-            ],
-            resize_keyboard=True
-        )
-        context.bot.send_message(chat_id=user_data['freelancer_telegram_id'], text=text, reply_markup=reply_markup)
-        text = 'Ваше сообщение отправлено'
-        context.bot.send_message(chat_id=chat_id, text=text)
+    elif user_data.get('recipient_telegram_id'):
+        send_message_recipient(update, context, recipient='freelancer')
         show_customer_step(context, chat_id)
-        del user_data['freelancer_telegram_id']
-        del user_data['message_for_order']
         return 'HANDLE_CUSTOMER'
     elif update.callback_query and update.callback_query.data == 'pay':
         show_customer_start(context, chat_id)

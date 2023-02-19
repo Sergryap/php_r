@@ -202,7 +202,7 @@ def show_customer_orders(update, context):
                 [
                     InlineKeyboardButton(
                         'Написать фрилансеру',
-                        callback_data=f"tg_id:{order.freelancer.telegram_id}:{order.pk}"
+                        callback_data=f"answer:{order.freelancer.telegram_id}:{order.pk}"
                     )
                 ]
             ]
@@ -251,4 +251,44 @@ def send_freelancer_message(context, message, freelancer_telegram_id, chat_id):
     )
 
 
+def invite_to_recipient_chat(update, context, recipient):
+    recipient_telegram_id = update.callback_query.data.split(':')[1]
+    chat_id = update.effective_chat.id
+    order_pk = update.callback_query.data.split(':')[2]
+    user_data = context.user_data
+    user_data['recipient_telegram_id'] = recipient_telegram_id
+    user_data['message_for_order'] = order_pk
+    recipient_text = {'customer': 'заказчику', 'freelancer': 'фрилансеру'}
+    text = f'Введите сообщение для отправки {recipient_text[recipient]}'
+    context.bot.send_message(chat_id=chat_id, text=text)
 
+
+def send_message_recipient(update, context, recipient):
+    chat_id = update.effective_chat.id
+    user_data = context.user_data
+    message = update.message.text
+    order_pk = user_data['message_for_order']
+    order = Order.objects.get(pk=order_pk)
+    sender = {'customer': 'фрилансера', 'freelancer': 'заказчика'}
+    text = textwrap.dedent(
+        f'''
+        Сообщение от {sender[recipient]} по заказу №{order_pk}
+        Название: {order.title}
+        Сообщение: "{message}"
+        '''
+    )
+    sender = {'customer': 'Фрилансер', 'freelancer': 'Заказчик'}
+    order.messages += f'\n{sender[recipient]}: "{message}"'
+    order.save()
+    sender = {'customer': 'фрилансеру', 'freelancer': 'заказчику'}
+    reply_markup = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(f'Ответить {sender[recipient]}', callback_data=f'answer:{chat_id}:{order_pk}')]
+        ],
+        resize_keyboard=True
+    )
+    context.bot.send_message(chat_id=user_data['recipient_telegram_id'], text=text, reply_markup=reply_markup)
+    text = 'Ваше сообщение отправлено'
+    context.bot.send_message(chat_id=chat_id, text=text)
+    del user_data['recipient_telegram_id']
+    del user_data['message_for_order']
