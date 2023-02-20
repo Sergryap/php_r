@@ -54,18 +54,20 @@ def show_freelancer_orders(context, chat_id, freelancer_orders=False):
         message = 'Выберите заказ для детального ознакомления и при желании выберите его для выполнения:'
     if freelancer_orders:
         orders = Order.objects.filter(freelancer__telegram_id=chat_id)
+        detail = 'my_detail'
     else:
         orders = Order.objects.filter(Q(status='33') | Q(status='1 not processed'))
+        detail = 'detail'
     reply_markup = InlineKeyboardMarkup(
         inline_keyboard=[[InlineKeyboardButton('Вернуться назад', callback_data='break')]] + [
-            [InlineKeyboardButton(order.title, callback_data=f'detail:{order.pk}')] for order in orders
+            [InlineKeyboardButton(order.title, callback_data=f'{detail}:{order.pk}')] for order in orders
         ],
         resize_keyboard=True
     )
     context.bot.send_message(chat_id=chat_id, text=message, reply_markup=reply_markup)
 
 
-def show_order_detail(context, chat_id, order_pk, button=True):
+def show_order_detail(context, chat_id, order_pk, my_order=False):
     order = Order.objects.get(pk=order_pk)
     message = textwrap.dedent(
         f'''
@@ -74,7 +76,7 @@ def show_order_detail(context, chat_id, order_pk, button=True):
         Создан: {order.created_at}
         '''
     )
-    if button:
+    if not my_order:
         reply_markup = InlineKeyboardMarkup(
             inline_keyboard=[
                 [InlineKeyboardButton('Вернуться назад', callback_data='break')],
@@ -83,7 +85,16 @@ def show_order_detail(context, chat_id, order_pk, button=True):
             resize_keyboard=True
         )
     else:
-        reply_markup = None
+        reply_markup = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton('Вернуться назад', callback_data='break')],
+                [InlineKeyboardButton(
+                    'Написать заказчику', callback_data=f'send:{order.client.telegram_id}:{order.pk}'
+                )],
+                [InlineKeyboardButton('Переписка по заказу', callback_data=f"messages:{order.pk}")]
+            ],
+            resize_keyboard=True
+        )
     context.bot.send_message(chat_id=chat_id, text=message, reply_markup=reply_markup)
 
 
