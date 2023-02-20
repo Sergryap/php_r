@@ -292,6 +292,7 @@ def handle_customer(update, context):
             prices=[LabeledPrice('Test', total_value * 100)]
         )
         return 'PRECHECKOUT'
+    return 'HANDLE_CUSTOMER'
 
 
 def precheckout_callback(update: Update, context: CallbackContext):
