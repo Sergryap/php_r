@@ -277,7 +277,7 @@ def handle_customer(update, context):
         if customer.payment_status:
             total_value = value[status] - value[current_status]
         else:
-            total_value = value[current_status]
+            total_value = value[status]
         if total_value <= 0:
             context.bot.send_message(chat_id=chat_id, text=f'Ваш текущий тариф "{current_status}". Оплата не требуется')
             show_customer_step(context, chat_id)
