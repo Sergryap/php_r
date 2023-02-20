@@ -53,10 +53,10 @@ def show_freelancer_orders(context, chat_id, freelancer_orders=False):
     else:
         message = 'Выберите заказ для детального ознакомления и при желании выберите его для выполнения:'
     if freelancer_orders:
-        orders = Order.objects.filter(freelancer__telegram_id=chat_id)
+        orders = Order.objects.filter(freelancer__telegram_id=chat_id).exclude(status='4 completed')
         detail = 'my_detail'
     else:
-        orders = Order.objects.filter(Q(status='33') | Q(status='1 not processed'))
+        orders = Order.objects.filter(Q(status='33') | Q(status='1 not processed')).exclude(status='4 completed')
         detail = 'detail'
     reply_markup = InlineKeyboardMarkup(
         inline_keyboard=[[InlineKeyboardButton('Вернуться назад', callback_data='break')]] + [
@@ -91,7 +91,8 @@ def show_order_detail(context, chat_id, order_pk, my_order=False):
                 [InlineKeyboardButton(
                     'Написать заказчику', callback_data=f'send:{order.client.telegram_id}:{order.pk}'
                 )],
-                [InlineKeyboardButton('Переписка по заказу', callback_data=f"messages:{order.pk}")]
+                [InlineKeyboardButton('Переписка по заказу', callback_data=f"messages:{order.pk}")],
+                [InlineKeyboardButton('Завершить заказ', callback_data=f"finish:{order.pk}")]
             ],
             resize_keyboard=True
         )
@@ -189,7 +190,7 @@ def show_customer_orders(update, context):
         username=f'{update.effective_user.username}_{chat_id}',
     )
 
-    orders = Order.objects.filter(client=customer)
+    orders = Order.objects.filter(client=customer).exclude(status='4 completed')
     for order in orders:
         status = order.status
         if status == '33' or status == '1 not processed':

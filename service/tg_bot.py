@@ -188,6 +188,12 @@ def handle_freelancer(update, context):
         messages = order.messages
         context.bot.send_message(chat_id=chat_id, text=messages)
         show_freelancer_menu(context, chat_id)
+    elif update.callback_query and update.callback_query.data.split(':')[0] == 'finish':
+        order_pk = update.callback_query.data.split(':')[1]
+        order = Order.objects.get(pk=order_pk)
+        order.status = '4 completed'
+        order.save()
+        show_freelancer_menu(context, chat_id)
     elif update.callback_query and update.callback_query.data == 'break':
         show_freelancer_menu(context, chat_id)
     elif update.callback_query and update.callback_query.data.split(':')[0] == 'choice':
