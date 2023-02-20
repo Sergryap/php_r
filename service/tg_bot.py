@@ -265,7 +265,7 @@ def handle_customer(update, context):
     elif (
             update.callback_query and
             update.callback_query.data in ['economy', 'base', 'vip'] and
-            user_data['callback_previous'] == 'pay'
+            user_data.get('callback_previous') == 'pay'
     ):
         del user_data['callback_previous']
         value = {'no status': 0, 'economy': 500, 'base': 1000, 'vip': 3000}
