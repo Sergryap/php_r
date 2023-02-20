@@ -5,7 +5,8 @@ from users.models import User, Customer, Freelancer
 
 class OrderInline(admin.TabularInline):
     model = Order
-    
+
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     pass

@@ -38,6 +38,7 @@ class User(AbstractUser):
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
 
+
 class Customer(User):
     status_choices = [
         ('no status', 'Нет подписки'),
@@ -61,6 +62,7 @@ class Customer(User):
     class Meta:
         verbose_name = 'Заказчик'
         verbose_name_plural = 'Заказчики'
+
 
 class Freelancer(User):
     rating = models.IntegerField(
