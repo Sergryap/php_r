@@ -180,8 +180,6 @@ def handle_freelancer(update, context):
     elif update.callback_query and update.callback_query.data.split(':')[0] == 'my_detail':
         order_pk = update.callback_query.data.split(':')[1]
         show_order_detail(context, chat_id, order_pk, my_order=True)
-    elif update.callback_query and update.callback_query.data.split(':')[0] == 'send':
-        invite_to_recipient_chat(update, context, recipient='customer')
     elif update.callback_query and update.callback_query.data.split(':')[0] == 'messages':
         order_pk = update.callback_query.data.split(':')[1]
         order = Order.objects.get(pk=order_pk)
